@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simon Memory Game</title>
+<style>
+  :root {
+    --bg-color: #121212;
+    --text-color: #ffffff;
+    --panel-bg: #1e1e1e;
+    --border-color: #333333;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+
+  .hidden { display: none !important; }
+
+  /* SETUP PANEL */
+  #setup-panel {
+    width: 100%;
+    max-width: 500px;
+    background-color: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  label {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+
+  select, input, button {
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background-color: #2a2a2a;
+    color: var(--text-color);
+  }
+
+  button {
+    cursor: pointer;
+    background-color: #0056b3;
+    color: white;
+    font-weight: bold;
+    border: none;
+    transition: background-color 0.2s;
+  }
+
+  button:hover {
+    background-color: #004494;
+  }
+
+  /* GAMEBOARD & LOBBY */
+  #game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  #status-message {
+    font-size: 20px;
+    font-weight: bold;
+    height: 30px;
+  }
+
+  .simon-board {
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+    padding: 12px;
+    background-color: #000000;
+    box-sizing: border-box;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  }
+
+  .btn-pad {
+    border-radius: 20px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.1s ease, filter 0.1s ease;
+  }
+
+  .btn-pad.active {
+    opacity: 1;
+    filter: brightness(1.6);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+  }
+
+  /* Color Themes */
+  /* Classic Mode */
+  .theme-classic .pad-0 { background-color: #28a745; border-top-left-radius: 160px; }
+  .theme-classic .pad-1 { background-color: #dc3545; border-top-right-radius: 160px; }
+  .theme-classic .pad-2 { background-color: #ffc107; border-bottom-left-radius: 160px; }
+  .theme-classic .pad-3 { background-color: #007bff; border-bottom-right-radius: 160px; }
+
+  /* Monochromatic Mode */
+  .theme-mono .pad-0 { background-color: #888888; border-top-left-radius: 160px; }
+  .theme-mono .pad-1 { background-color: #888888; border-top-right-radius: 160px; }
+  .theme-mono .pad-2 { background-color: #888888; border-bottom-left-radius: 160px; }
+  .theme-mono .pad-3 { background-color: #888888; border-bottom-right-radius: 160px; }
+
+  /* STATS PANEL */
+  #stats-panel {
+    width: 100%;
+    max-width: 550px;
+    background-color: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    padding: 25px;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 20px 0;
+  }
+
+  .stat-card {
+    background-color: #2a2a2a;
+    padding: 15px;
+    border-radius: 6px;
+  }
+
+  .stat-card .value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #4da6ff;
+  }
+
+  .stat-card .label {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+
+  .button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-copy {
+    background-color: #198754;
+  }
+
+  .btn-copy:hover {
+    background-color: #146c43;
+  }
+</style>
+</head>
+<body>
+
+<!-- SETUP PANEL -->
+<div id="setup-panel">
+  <h2>Game Setup</h2>
+  <div class="form-group">
+    <label for="color-mode">Color Scheme:</label>
+    <select id="color-mode">
+      <option value="classic">Classic Four Colors</option>
+      <option value="mono">Monochromatic (All Grey)</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="audio-mode">Audio Settings:</label>
+    <select id="audio-mode">
+      <option value="distinct">4 Distinct Tone Frequencies (E4, A4, C#5, E5)</option>
+      <option value="single">Single Frequency Tone (A4)</option>
+      <option value="mute">Muted (No Sound)</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="speed-setting">Base Speed:</label>
+    <select id="speed-setting">
+      <option value="800">Normal (800ms)</option>
+      <option value="500">Fast (500ms)</option>
+      <option value="1100">Slow (1100ms)</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="custom-seed">Sequence Seed (Leave blank for random):</label>
+    <input type="text" id="custom-seed" placeholder="e.g., simon-123">
+  </div>
+
+  <button id="btn-apply-setup" style="width: 100%; margin-top: 10px;">Proceed to Game</button>
+</div>
+
+<!-- GAME CONTAINER -->
+<div id="game-container" class="hidden">
+  <div id="status-message">Press SPACEBAR to start</div>
+  
+  <div id="simon-board" class="simon-board theme-classic">
+    <div class="btn-pad pad-0" data-index="0"></div>
+    <div class="btn-pad pad-1" data-index="1"></div>
+    <div class="btn-pad pad-2" data-index="2"></div>
+    <div class="btn-pad pad-3" data-index="3"></div>
+  </div>
+</div>
+
+<!-- STATS STAGE -->
+<div id="stats-panel" class="hidden">
+  <h2>Game Over</h2>
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="value" id="stat-max-level">0</div>
+      <div class="label">Highest Level Reached</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="stat-total-clicks">0</div>
+      <div class="label">Total Successful Inputs</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="stat-reaction-time">0 ms</div>
+      <div class="label">Avg Reaction Time</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="stat-duration">0 s</div>
+      <div class="label">Game Duration</div>
+    </div>
+  </div>
+
+  <div class="button-group">
+    <button id="btn-copy-data" class="btn-copy">Copy Data (Single Row)</button>
+    <button id="btn-copy-headers" class="btn-copy">Copy Data (With Headers)</button>
+    <button id="btn-restart">Play Again (Spacebar)</button>
+    <button id="btn-change-settings" style="background-color: #444;">Change Settings</button>
+  </div>
+</div>
+
+<script>
+// Web Audio Context Setup
+let audioCtx = null;
+const FREQUENCIES = [329.63, 440.00, 554.37, 659.25]; // E4, A4, C#5, E5
+
+// Seeded PRNG Helpers (mulberry32)
+function mulberry32(a) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 8, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+function stringToSeed(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = Math.imul(31, hash) + str.charCodeAt(i) | 0;
+  }
+  return hash;
+}
+
+// Game State Variables
+let sequence = [];
+let playerStep = 0;
+let isPlayingSequence = false;
+let isGameActive = false;
+let config = {};
+let currentSeed = "";
+let rngInstance = null;
+let lastResultData = { headers: [], data: [] };
+
+// Statistics Tracking
+let gameStartTime = 0;
+let totalClicks = 0;
+let reactionTimes = [];
+let lastPadTime = 0;
+
+// Element References
+const setupPanel = document.getElementById('setup-panel');
+const gameContainer = document.getElementById('game-container');
+const statsPanel = document.getElementById('stats-panel');
+const statusMessage = document.getElementById('status-message');
+const simonBoard = document.getElementById('simon-board');
+const pads = document.querySelectorAll('.btn-pad');
+
+// Setup Action
+document.getElementById('btn-apply-setup').addEventListener('click', () => {
+  const customSeedInput = document.getElementById('custom-seed').value.trim();
+  
+  config = {
+    colorMode: document.getElementById('color-mode').value,
+    audioMode: document.getElementById('audio-mode').value,
+    speed: parseInt(document.getElementById('speed-setting').value, 10),
+    userSeed: customSeedInput
+  };
+
+  simonBoard.className = `simon-board theme-${config.colorMode}`;
+
+  setupPanel.classList.add('hidden');
+  gameContainer.classList.remove('hidden');
+  statusMessage.textContent = "Press SPACEBAR to start";
+});
+
+// Key Listener for Spacebar Start
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.key === ' ') {
+    e.preventDefault();
+
+    if (!isGameActive && gameContainer.classList.contains('hidden') === false) {
+      startGame();
+    } else if (!statsPanel.classList.contains('hidden')) {
+      resetToLobby();
+      startGame();
+    }
+  }
+});
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playSound(padIndex) {
+  if (config.audioMode === 'mute') return;
+  initAudio();
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  
+  let freq = FREQUENCIES[padIndex];
+  if (config.audioMode === 'single') {
+    freq = FREQUENCIES[1]; // Fixed at A4
+  }
+
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.4);
+}
+
+function startGame() {
+  isGameActive = true;
+  sequence = [];
+  playerStep = 0;
+  totalClicks = 0;
+  reactionTimes = [];
+  gameStartTime = performance.now();
+
+  // Initialize or maintain seed
+  currentSeed = config.userSeed !== "" ? config.userSeed : Math.random().toString(36).substring(2, 9);
+  const numericSeed = stringToSeed(currentSeed);
+  rngInstance = mulberry32(numericSeed);
+
+  statsPanel.classList.add('hidden');
+  gameContainer.classList.remove('hidden');
+
+  nextRound();
+}
+
+function nextRound() {
+  playerStep = 0;
+  // Generate random pad 0-3 using seeded PRNG
+  const nextPad = Math.floor(rngInstance() * 4);
+  sequence.push(nextPad);
+  statusMessage.textContent = `Level ${sequence.length}`;
+  playSequence();
+}
+
+function playSequence() {
+  isPlayingSequence = true;
+  let i = 0;
+
+  const interval = setInterval(() => {
+    activatePad(sequence[i]);
+    i++;
+
+    if (i >= sequence.length) {
+      clearInterval(interval);
+      setTimeout(() => {
+        isPlayingSequence = false;
+        statusMessage.textContent = "Your turn!";
+        lastPadTime = performance.now();
+      }, config.speed);
+    }
+  }, config.speed);
+}
+
+function activatePad(index) {
+  const pad = document.querySelector(`.pad-${index}`);
+  pad.classList.add('active');
+  playSound(index);
+
+  setTimeout(() => {
+    pad.classList.remove('active');
+  }, config.speed * 0.6);
+}
+
+// Player Input Handling
+pads.forEach(pad => {
+  pad.addEventListener('click', (e) => {
+    if (!isGameActive || isPlayingSequence) return;
+
+    const clickedIndex = parseInt(e.target.dataset.index, 10);
+    const now = performance.now();
+
+    reactionTimes.push(now - lastPadTime);
+    lastPadTime = now;
+    totalClicks++;
+
+    activatePad(clickedIndex);
+
+    if (clickedIndex === sequence[playerStep]) {
+      playerStep++;
+      if (playerStep === sequence.length) {
+        isPlayingSequence = true;
+        statusMessage.textContent = "Correct!";
+        setTimeout(nextRound, 1000);
+      }
+    } else {
+      endGame();
+    }
+  });
+});
+
+function endGame() {
+  isGameActive = false;
+  const gameEndTime = performance.now();
+  const totalDurationSec = parseFloat(((gameEndTime - gameStartTime) / 1000).toFixed(1));
+  
+  const avgReaction = reactionTimes.length > 0 
+    ? Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length)
+    : 0;
+
+  const maxLevel = Math.max(0, sequence.length - 1);
+
+  document.getElementById('stat-max-level').textContent = maxLevel;
+  document.getElementById('stat-total-clicks').textContent = totalClicks;
+  document.getElementById('stat-reaction-time').textContent = `${avgReaction} ms`;
+  document.getElementById('stat-duration').textContent = `${totalDurationSec} s`;
+
+  // Prepare Clipboard Data
+  const headers = [
+    "Timestamp",
+    "Game Seed",
+    "Color Mode",
+    "Audio Mode",
+    "Base Speed (ms)",
+    "Highest Level Reached",
+    "Total Successful Inputs",
+    "Avg Reaction Time (ms)",
+    "Game Duration (s)",
+    "Full Generated Sequence"
+  ];
+
+  const dataRow = [
+    new Date().toISOString(),
+    currentSeed,
+    config.colorMode,
+    config.audioMode,
+    config.speed,
+    maxLevel,
+    totalClicks,
+    avgReaction,
+    totalDurationSec,
+    sequence.join("-")
+  ];
+
+  lastResultData = { headers: headers, data: dataRow };
+
+  gameContainer.classList.add('hidden');
+  statsPanel.classList.remove('hidden');
+}
+
+function copyToClipboard(text, successMessage) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert(successMessage);
+  }).catch(err => {
+    alert("Failed to copy data: " + err);
+  });
+}
+
+document.getElementById('btn-copy-data').addEventListener('click', () => {
+  const tsvRow = lastResultData.data.join('\t');
+  copyToClipboard(tsvRow, "Data copied to clipboard! Ready to paste into your spreadsheet.");
+});
+
+document.getElementById('btn-copy-headers').addEventListener('click', () => {
+  const tsvHeaders = lastResultData.headers.join('\t');
+  const tsvRow = lastResultData.data.join('\t');
+  const combined = tsvHeaders + '\n' + tsvRow;
+  copyToClipboard(combined, "Headers and data copied to clipboard! Ready to paste into your spreadsheet.");
+});
+
+function resetToLobby() {
+  statsPanel.classList.add('hidden');
+  gameContainer.classList.remove('hidden');
+  statusMessage.textContent = "Press SPACEBAR to start";
+}
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+  resetToLobby();
+  startGame();
+});
+
+document.getElementById('btn-change-settings').addEventListener('click', () => {
+  statsPanel.classList.add('hidden');
+  gameContainer.classList.add('hidden');
+  setupPanel.classList.remove('hidden');
+});
+</script>
+</body>
+</html>
