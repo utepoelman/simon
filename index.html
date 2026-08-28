@@ -101,28 +101,49 @@
   .simon-board {
     width: 320px;
     height: 320px;
-    border-radius: 50%;
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
     gap: 12px;
     padding: 12px;
-    background-color: #000000;
     box-sizing: border-box;
+    border-radius: 50%;
+    background-color: #000000;
     box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  /* Remove black circle and container styling in Light Mode */
+  body.light-mode .simon-board {
+    background-color: transparent;
+    box-shadow: none;
+    border-radius: 0;
   }
 
   .btn-pad {
     border-radius: 20px;
     cursor: pointer;
     opacity: 0.6;
-    transition: opacity 0.1s ease, filter 0.1s ease;
+    transition: opacity 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease;
   }
 
+  /* Base Contrast for Light Theme Pads */
+  body.light-mode .btn-pad {
+    opacity: 0.85;
+    border: 2px solid rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  }
+
+  /* SUBTLE & BALANCED LIGHTING EFFECT (DARK MODE) */
   .btn-pad.active {
-    opacity: 1;
-    filter: brightness(1.6);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+    opacity: 1 !important;
+    filter: brightness(1.35);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.5);
+  }
+
+  /* SUBTLE LIGHTING EFFECT (LIGHT MODE) */
+  body.light-mode .btn-pad.active {
+    filter: brightness(1.4) contrast(1.15);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25), inset 0 0 10px rgba(255, 255, 255, 0.8);
   }
 
   /* Color Themes */
@@ -133,10 +154,10 @@
   .theme-classic .pad-3 { background-color: #007bff; border-bottom-right-radius: 160px; }
 
   /* Monochromatic Mode */
-  .theme-mono .pad-0 { background-color: #888888; border-top-left-radius: 160px; }
-  .theme-mono .pad-1 { background-color: #888888; border-top-right-radius: 160px; }
-  .theme-mono .pad-2 { background-color: #888888; border-bottom-left-radius: 160px; }
-  .theme-mono .pad-3 { background-color: #888888; border-bottom-right-radius: 160px; }
+  .theme-mono .pad-0 { background-color: #777777; border-top-left-radius: 160px; }
+  .theme-mono .pad-1 { background-color: #777777; border-top-right-radius: 160px; }
+  .theme-mono .pad-2 { background-color: #777777; border-bottom-left-radius: 160px; }
+  .theme-mono .pad-3 { background-color: #777777; border-bottom-right-radius: 160px; }
 
   /* STATS PANEL */
   #stats-panel {
